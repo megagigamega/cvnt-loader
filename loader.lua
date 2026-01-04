@@ -1,39 +1,54 @@
-local key = getgenv().Key
-if not key then
-    game.Players.LocalPlayer:Kick("NO KEY")
+-- ===== CONFIG =====
+local API_URL = "http://185.185.68.56:8080/check_key"
+-- ==================
+
+-- проверка ключа
+if not getgenv().Key or type(getgenv().Key) ~= "string" then
+    warn("[CVNT] Key not provided")
     return
 end
 
 local HttpService = game:GetService("HttpService")
-local hwid = game:GetService("RbxAnalyticsService"):GetClientId()
+local RbxAnalyticsService = game:GetService("RbxAnalyticsService")
 
-local url = "http://185.185.68.56:5000/redeem"
+local hwid = RbxAnalyticsService:GetClientId()
 
-local body = HttpService:JSONEncode({
-    key = key,
-    hwid = hwid,
-    script = "cvnt6453327"
-})
+-- определяем http request
+local request = syn and syn.request or http_request or request
+if not request then
+    warn("[CVNT] HTTP request not supported")
+    return
+end
 
+-- запрос к API
 local response = request({
-    Url = url,
+    Url = API_URL,
     Method = "POST",
     Headers = {
         ["Content-Type"] = "application/json"
     },
-    Body = body
+    Body = HttpService:JSONEncode({
+        key = getgenv().Key,
+        hwid = hwid
+    })
 })
 
-if response.StatusCode ~= 200 then
-    game.Players.LocalPlayer:Kick("INVALID KEY")
+if not response or not response.Body then
+    warn("[CVNT] API no response")
     return
 end
 
-local data = HttpService:JSONDecode(response.Body)
+local data
+pcall(function()
+    data = HttpService:JSONDecode(response.Body)
+end)
 
-if not data.success then
-    game.Players.LocalPlayer:Kick(data.error or "AUTH FAILED")
+if not data or data.status ~= "ok" then
+    warn("[CVNT] License error:", data and data.reason or "unknown")
     return
 end
 
-loadstring(data.script)()
+print("[CVNT] License OK")
+
+-- ===== ОСНОВНОЙ СКРИПТ =====
+-- loadstring(game:HttpGet("URL_ТВОЕГО_СКРИПТА"))()
