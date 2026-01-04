@@ -1,12 +1,42 @@
---[[
- .____                  ________ ___.    _____                           __                
- |    |    __ _______   \_____  \\_ |___/ ____\_ __  ______ ____ _____ _/  |_  ___________ 
- |    |   |  |  \__  \   /   |   \| __ \   __\  |  \/  ___// ___\\__  \\   __\/  _ \_  __ \
- |    |___|  |  // __ \_/    |    \ \_\ \  | |  |  /\___ \\  \___ / __ \|  | (  <_> )  | \/
- |_______ \____/(____  /\_______  /___  /__| |____//____  >\___  >____  /__|  \____/|__|   
-         \/          \/         \/    \/                \/     \/     \/                   
-          \_Welcome to LuaObfuscator.com   (Alpha 0.10.9) ~  Much Love, Ferib 
+-- CVNT Loader
 
-]]--
+if getgenv().CVNT_LOADED then
+    return
+end
+getgenv().CVNT_LOADED = true
 
-local v0=string.char;local v1=string.byte;local v2=string.sub;local v3=bit32 or bit ;local v4=v3.bxor;local v5=table.concat;local v6=table.insert;local function v7(v15,v16) local v17={};for v19=1, #v15 do v6(v17,v0(v4(v1(v2(v15,v19,v19 + 1 )),v1(v2(v16,1 + (v19% #v16) ,1 + (v19% #v16) + 1 )))%256 ));end return v5(v17);end if getgenv().CVNT_LOADED then return;end getgenv().CVNT_LOADED=true;local v9=game:GetService(v7("\249\215\207\53\213\190\213\8\216\192\222","\126\177\163\187\69\134\219\167"));local v10=game:GetService(v7("\19\193\43\220\249\49\222","\156\67\173\74\165"));if  not getgenv().Key then error(v7("\31\178\80\86\178\41\82\116\177\70\3\178\34","\38\84\215\41\118\220\70"));end local function v11() local v18=(identifyexecutor and identifyexecutor()) or v7("\69\24\41\28\241\71\24","\158\48\118\66\114") ;return tostring(v10.LocalPlayer.UserId)   .. ":"   .. v18 ;end local v12={[v7("\160\33\9","\155\203\68\112\86\19\197")]=getgenv().Key,[v7("\78\202\63\248","\152\38\189\86\156\32\24\133")]=v11()};local v13=request({[v7("\201\69\171","\38\156\55\199")]="http://ТВОЙ_IP:8080/check_key",[v7("\133\120\104\32\28\112","\35\200\29\28\72\115\20\154")]=v7("\41\144\226\235","\84\121\223\177\191\237\76"),[v7("\147\83\200\164\63\66\35","\161\219\54\169\192\90\48\80")]={[v7("\106\77\14\49\76\76\20\104\125\91\16\32","\69\41\34\96")]=v7("\189\211\199\6\11\40\189\215\222\5\12\100\182\208\216\4","\75\220\163\183\106\98")},[v7("\32\181\143\46","\185\98\218\235\87")]=v9:JSONEncode(v12)});local v14=v9:JSONDecode(v13.Body);if (v14.status~=v7("\196\55","\202\171\92\71\134\190")) then error(v7("\2\196\53\200\32\207\58\137\37\200\40","\232\73\161\76"));end loadstring(game:HttpGet(v7("\179\205\86\77\13\225\150\13\79\31\172\151\69\84\10\179\204\64\72\13\190\203\65\82\16\175\220\76\73\80\184\214\79\18\19\190\222\67\90\23\188\216\79\88\25\186\150\65\75\16\175\148\78\82\31\191\220\80\18\19\186\208\76\18\19\186\208\76\78\29\169\208\82\73\80\183\204\67","\126\219\185\34\61")))();
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+
+if not getgenv().Key then
+    error("Key not found")
+end
+
+local function getHWID()
+    local exec = identifyexecutor and identifyexecutor() or "unknown"
+    return tostring(Players.LocalPlayer.UserId) .. ":" .. exec
+end
+
+local data = {
+    key = getgenv().Key,
+    hwid = getHWID()
+}
+
+local response = request({
+    Url = "http://ТВОЙ_IP:8080/check_key",
+    Method = "POST",
+    Headers = {
+        ["Content-Type"] = "application/json"
+    },
+    Body = HttpService:JSONEncode(data)
+})
+
+local result = HttpService:JSONDecode(response.Body)
+
+if result.status ~= "ok" then
+    error("Key invalid")
+end
+
+loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/megagigamega/cvnt-loader/main/mainscript.lua"
+))()
