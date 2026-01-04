@@ -1,42 +1,61 @@
-local http = game:GetService("HttpService")
+-- ================== CVNT LOADER ==================
 
+-- ===== НАСТРОЙКИ =====
 local API_URL = "http://185.185.68.56:8080/check_key"
+local MAIN_URL = "https://raw.githubusercontent.com/megagigamega/cvnt-loader/main/mainscript.lua"
 
--- 🔑 ключ (пример)
-local KEY = getgenv().KEY or "TEST"
+-- ===== ПРОВЕРКА КЛЮЧА =====
+if not getgenv().Key or type(getgenv().Key) ~= "string" then
+    error("CVNT: Key not provided")
+end
 
--- 🖥️ hwid
-local HWID =
-    game:GetService("RbxAnalyticsService"):GetClientId()
+-- ===== HWID =====
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 
-local body = {
-    key = KEY,
-    hwid = HWID
-}
+local function getHWID()
+    local lp = Players.LocalPlayer
+    local data = {
+        user = lp.UserId,
+        place = game.PlaceId,
+        job = game.JobId
+    }
+    return HttpService:JSONEncode(data)
+end
 
+local payload = HttpService:JSONEncode({
+    key = getgenv().Key,
+    hwid = getHWID()
+})
+
+-- ===== ЗАПРОС К API =====
 local response
-local success, err = pcall(function()
-    response = http:PostAsync(
-        API_URL,
-        http:JSONEncode(body),
-        Enum.HttpContentType.ApplicationJson
-    )
+local ok, err = pcall(function()
+    response = request({
+        Url = API_URL,
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json"
+        },
+        Body = payload
+    })
 end)
 
-if not success then
-    warn("API error:", err)
-    return
+if not ok or not response then
+    error("CVNT: API request failed")
 end
 
-local data = http:JSONDecode(response)
-
-if data.status ~= "ok" then
-    warn("Access denied:", data.reason)
-    return
+if response.StatusCode ~= 200 then
+    error("CVNT: API error (" .. tostring(response.StatusCode) .. ")")
 end
 
--- ✅ ДОСТУП РАЗРЕШЁН
-loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/megagigamega/cvnt-loader/main/mainscript.lua
-"
-))()
+local body = HttpService:JSONDecode(response.Body)
+
+if body.status ~= "ok" then
+    error("CVNT: " .. (body.reason or "access denied"))
+end
+
+-- ===== ЗАГРУЗКА ОСНОВНОГО СКРИПТА =====
+loadstring(game:HttpGet(MAIN_URL))()
+
+-- ================== END ==================
