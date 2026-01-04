@@ -1,54 +1,42 @@
--- ===== CONFIG =====
+local http = game:GetService("HttpService")
+
 local API_URL = "http://185.185.68.56:8080/check_key"
--- ==================
 
--- проверка ключа
-if not getgenv().Key or type(getgenv().Key) ~= "string" then
-    warn("[CVNT] Key not provided")
-    return
-end
+-- 🔑 ключ (пример)
+local KEY = getgenv().KEY or "TEST"
 
-local HttpService = game:GetService("HttpService")
-local RbxAnalyticsService = game:GetService("RbxAnalyticsService")
+-- 🖥️ hwid
+local HWID =
+    game:GetService("RbxAnalyticsService"):GetClientId()
 
-local hwid = RbxAnalyticsService:GetClientId()
+local body = {
+    key = KEY,
+    hwid = HWID
+}
 
--- определяем http request
-local request = syn and syn.request or http_request or request
-if not request then
-    warn("[CVNT] HTTP request not supported")
-    return
-end
-
--- запрос к API
-local response = request({
-    Url = API_URL,
-    Method = "POST",
-    Headers = {
-        ["Content-Type"] = "application/json"
-    },
-    Body = HttpService:JSONEncode({
-        key = getgenv().Key,
-        hwid = hwid
-    })
-})
-
-if not response or not response.Body then
-    warn("[CVNT] API no response")
-    return
-end
-
-local data
-pcall(function()
-    data = HttpService:JSONDecode(response.Body)
+local response
+local success, err = pcall(function()
+    response = http:PostAsync(
+        API_URL,
+        http:JSONEncode(body),
+        Enum.HttpContentType.ApplicationJson
+    )
 end)
 
-if not data or data.status ~= "ok" then
-    warn("[CVNT] License error:", data and data.reason or "unknown")
+if not success then
+    warn("API error:", err)
     return
 end
 
-print("[CVNT] License OK")
+local data = http:JSONDecode(response)
 
--- ===== ОСНОВНОЙ СКРИПТ =====
--- loadstring(game:HttpGet("URL_ТВОЕГО_СКРИПТА"))()
+if data.status ~= "ok" then
+    warn("Access denied:", data.reason)
+    return
+end
+
+-- ✅ ДОСТУП РАЗРЕШЁН
+loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/megagigamega/cvnt-loader/main/mainscript.lua
+"
+))()
