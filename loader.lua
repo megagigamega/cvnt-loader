@@ -1,37 +1,48 @@
--- CVNT Loader
+-- =========================
+-- CVNT LOADER
+-- =========================
 
-if getgenv().CVNT_LOADED then return end
+-- защита от повторного запуска
+if getgenv().CVNT_LOADED then
+    return
+end
 getgenv().CVNT_LOADED = true
 
+-- сервисы
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 
+-- проверка ключа
 if not getgenv().Key then
-    error("Key not found")
+    error("CVNT: Key not found. Use getgenv().Key = \"YOUR_KEY\"")
 end
 
--- универсальный request
+-- универсальный request (очень важно)
 local requestFunc =
     request or
     http_request or
     (syn and syn.request)
 
 if not requestFunc then
-    error("HTTP request not supported")
+    error("CVNT: Your executor does not support HTTP requests")
 end
 
+-- HWID (пока простой, позже усилим)
 local function getHWID()
-    local exec = identifyexecutor and identifyexecutor() or "unknown"
-    return tostring(Players.LocalPlayer.UserId) .. ":" .. exec
+    local executor = identifyexecutor and identifyexecutor() or "unknown"
+    local userId = Players.LocalPlayer.UserId
+    return tostring(userId) .. ":" .. executor
 end
 
+-- данные для API
 local payload = {
     key = getgenv().Key,
     hwid = getHWID()
 }
 
+-- запрос к API
 local response = requestFunc({
-    Url = "http://185.185.68.56:8080/check_key", -- <-- ТВОЙ IP
+    Url = "http://185.185.68.56:8080/check_key", -- ТВОЙ IP
     Method = "POST",
     Headers = {
         ["Content-Type"] = "application/json"
@@ -39,16 +50,29 @@ local response = requestFunc({
     Body = HttpService:JSONEncode(payload)
 })
 
+-- защита от пустого ответа
 if not response or not response.Body then
-    error("API not responding")
+    error("CVNT: API not responding")
 end
 
-local result = HttpService:JSONDecode(response.Body)
+-- парсим JSON
+local result
+local success, err = pcall(function()
+    result = HttpService:JSONDecode(response.Body)
+end)
 
+if not success then
+    error("CVNT: Invalid API response")
+end
+
+-- проверка статуса
 if result.status ~= "ok" then
-    error("Key invalid or expired")
+    local reason = result.reason or "unknown"
+    error("CVNT: Access denied (" .. reason .. ")")
 end
 
-loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/superSigma3131/fg435tyrudrfy/main/main.lua"
-))()
+-- загрузка основного скрипта
+local MAIN_SCRIPT_URL = "https://raw.githubusercontent.com/superSigma3131/fg435tyrudrfy/main/main.lua"
+
+local scriptSource = game:HttpGet(MAIN_SCRIPT_URL)
+loadstring(scriptSource)()
