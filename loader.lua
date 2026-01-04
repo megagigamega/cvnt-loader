@@ -1,44 +1,39 @@
--- CVNT Loader (Seliware compatible)
+local key = getgenv().Key
+if not key then
+    game.Players.LocalPlayer:Kick("NO KEY")
+    return
+end
 
-local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
+local hwid = game:GetService("RbxAnalyticsService"):GetClientId()
 
-if not getgenv().Key then
-    Players.LocalPlayer:Kick("NO KEY")
-    return
-end
+local url = "http://185.185.68.56:5000/redeem"
 
-if not http_request then
-    Players.LocalPlayer:Kick("Executor not supported")
-    return
-end
+local body = HttpService:JSONEncode({
+    key = key,
+    hwid = hwid,
+    script = "cvnt6453327"
+})
 
-local HWID =
-    game:GetService("RbxAnalyticsService"):GetClientId()
-
-local response = http_request({
-    Url = "http://127.0.0.1:5000/redeem",
+local response = request({
+    Url = url,
     Method = "POST",
     Headers = {
         ["Content-Type"] = "application/json"
     },
-    Body = HttpService:JSONEncode({
-        key = getgenv().Key,
-        hwid = HWID
-    })
+    Body = body
 })
 
-if not response or response.StatusCode ~= 200 then
-    Players.LocalPlayer:Kick("API ERROR")
+if response.StatusCode ~= 200 then
+    game.Players.LocalPlayer:Kick("INVALID KEY")
     return
 end
 
 local data = HttpService:JSONDecode(response.Body)
 
-if not data.ok then
-    Players.LocalPlayer:Kick(data.error or "ACCESS DENIED")
+if not data.success then
+    game.Players.LocalPlayer:Kick(data.error or "AUTH FAILED")
     return
 end
 
--- 🔒 Грузим РЕАЛЬНЫЙ скрипт ТОЛЬКО ПОСЛЕ ПРОВЕРКИ
-loadstring(game:HttpGet(data.script_url))()
+loadstring(data.script)()
